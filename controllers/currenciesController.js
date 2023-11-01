@@ -2,11 +2,12 @@ const Currency = require('../models/Currency');
 const Category = require('../models/Currency');
 
 // @desc Get all Currencies
-// @route GET /Currencies
+// @route GET /currencies
 // @access Private
 const getAllCurrencies = async (req, res) => {
   // Get all currencies from MongoDB
   const currencies = await Currency.find().lean();
+
   // If no currencies
   if (!currencies?.length) {
     return res.status(400).json({ message: 'No currencies found' });
@@ -126,6 +127,35 @@ const updateCurrency = async (req, res) => {
   res.json({ message: `${updatedCurrency.title}  updated` });
 };
 
+// @desc Update a value of currency
+// @route PATCH /currencies/values
+// @access Private
+const updateCurrencyValues = async (req, res) => {
+  // Update product-only 'Manager' or 'Admin'
+  if (!req.roles.includes('Manager') || !req.roles.includes('Admin')) {
+    return res.status(403).json({ message: 'No access' });
+  }
+  const { values } = req.body;
+
+  // Confirm data
+  if (!Array.isArray(values)) {
+    return res.status(400).json({ message: 'Values is required and array' });
+  }
+
+  values.forEach(async function (item) {
+    // Does the currency exist to update?
+    const currency = await Currency.findOne({ title: item[0] }).exec();
+    if (!currency) {
+      return res.status(400).json({ message: 'Currency not found' });
+    }
+
+    currency.value = item[1];
+    await currency.save();
+  });
+
+  res.json({ message: `Currency values  updated` });
+};
+
 // @desc Delete a Currency
 // @route DELETE /currencies
 // @access Private
@@ -163,5 +193,6 @@ module.exports = {
   getOneCurrencyById,
   createNewCurrency,
   updateCurrency,
+  updateCurrencyValues,
   deleteCurrency,
 };

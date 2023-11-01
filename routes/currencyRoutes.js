@@ -15,4 +15,6 @@ router
   .patch(currenciesController.updateCurrency)
   .delete(currenciesController.deleteCurrency);
 
+router.route('/values').patch(currenciesController.updateCurrencyValues);
+
 module.exports = router;
