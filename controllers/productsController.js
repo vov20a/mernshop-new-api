@@ -120,7 +120,8 @@ const createNewProduct = async (req, res) => {
   // console.log('file', req.files);
   let fileName = '';
   if (req.files) {
-    fileName = uuid() + '_' + req.files.productImg.name;
+    // fileName = uuid() + '_' + req.files.productImg.name;
+    fileName = req.files.productImg.name;
     // req.files.productImg.mv(path.join(__dirname, '..', 'uploads', fileName));
     if (!fs.existsSync(path.join(__dirname, '..', 'public', 'uploads'))) {
       await fsPromises.mkdir(path.join(__dirname, '..', 'public', 'uploads'));
@@ -183,7 +184,8 @@ const updateProduct = async (req, res) => {
   let fileName = '';
   if (req.files) {
     // console.log(req.files.productImg);
-    fileName = uuid() + '_' + req.files.productImg.name;
+    // fileName = uuid() + '_' + req.files.productImg.name;
+    fileName = req.files.productImg.name;
     await fsPromises.appendFile(
       path.join(__dirname, '..', 'public', 'uploads', fileName),
       req.files.productImg.data,
@@ -233,11 +235,10 @@ const deleteProduct = async (req, res) => {
   if (!product) {
     return res.status(400).json({ message: 'Product not found' });
   }
-
-  if (product.productImg) {
-    const pathToImage = path.join(__dirname, '..', 'public', 'uploads', product.productImg);
-    if (pathToImage) await fsPromises.unlink(pathToImage);
-  }
+  //в public/uploads находятся все картинки - они не удаляются
+  // if (product.productImg) {
+  //   await fsPromises.unlink(path.join(__dirname, '..', 'public', 'uploads', product.productImg));
+  // }
 
   const result = await product.deleteOne();
 
