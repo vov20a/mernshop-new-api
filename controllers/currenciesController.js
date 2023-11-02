@@ -129,12 +129,12 @@ const updateCurrency = async (req, res) => {
 
 // @desc Update a value of currency
 // @route PATCH /currencies/values
-// @access Private
+// @access Public
 const updateCurrencyValues = async (req, res) => {
   // Update product-only 'Manager' or 'Admin'
-  if (!req.roles.includes('Manager') || !req.roles.includes('Admin')) {
-    return res.status(403).json({ message: 'No access' });
-  }
+  // if (!req.roles.includes('Manager') || !req.roles.includes('Admin')) {
+  //   return res.status(403).json({ message: 'No access' });
+  // }
   const { values } = req.body;
 
   // Confirm data
