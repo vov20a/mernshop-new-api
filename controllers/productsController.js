@@ -190,9 +190,9 @@ const updateProduct = async (req, res) => {
       path.join(__dirname, '..', 'public', 'uploads', fileName),
       req.files.productImg.data,
     );
-    if (product.productImg) {
-      await fsPromises.unlink(path.join(__dirname, '..', 'public', 'uploads', product.productImg));
-    }
+    // if (product.productImg) {
+    //   await fsPromises.unlink(path.join(__dirname, '..', 'public', 'uploads', product.productImg));
+    // }
   }
 
   product.title = title;
