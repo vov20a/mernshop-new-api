@@ -235,7 +235,8 @@ const deleteProduct = async (req, res) => {
   }
 
   if (product.productImg) {
-    await fsPromises.unlink(path.join(__dirname, '..', 'public', 'uploads', product.productImg));
+    const pathToImage = path.join(__dirname, '..', 'public', 'uploads', product.productImg);
+    if (pathToImage) await fsPromises.unlink();
   }
 
   const result = await product.deleteOne();
