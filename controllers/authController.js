@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const cloudinary = require('cloudinary');
 
 // @desc Login
 // @route POST /auth
@@ -29,6 +30,7 @@ const login = async (req, res) => {
         email: foundUser.email,
         roles: foundUser.roles,
         id: foundUser.id,
+        avatarUrl: foundUser.avatar.url,
       },
     },
     process.env.ACCESS_TOKEN_SECRET,
@@ -36,7 +38,12 @@ const login = async (req, res) => {
   );
 
   const refreshToken = jwt.sign(
-    { username: foundUser.username, email: foundUser.email, id: foundUser.id },
+    {
+      username: foundUser.username,
+      email: foundUser.email,
+      id: foundUser.id,
+      avatarUrl: foundUser.avatar.url,
+    },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: '7d' },
   );
@@ -80,13 +87,37 @@ const register = async (req, res) => {
     return res.status(409).json({ message: 'Duplicate email' });
   }
 
+  myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+    folder: 'avatars',
+    width: 150,
+    crop: 'scale',
+  });
+
   // Hash password
   const hashedPwd = await bcrypt.hash(password, 10); // salt rounds
 
   let userObject;
   if (req.body.roles) {
-    userObject = { username, email, password: hashedPwd, roles: req.body.roles };
-  } else userObject = { username, email, password: hashedPwd };
+    userObject = {
+      username,
+      email,
+      password: hashedPwd,
+      avatar: {
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
+      },
+      roles: req.body.roles,
+    };
+  } else
+    userObject = {
+      username,
+      email,
+      password: hashedPwd,
+      avatar: {
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
+      },
+    };
 
   // Create and store new user
   const user = await User.create(userObject);
@@ -98,6 +129,7 @@ const register = async (req, res) => {
         email: user.email,
         roles: user.roles,
         id: user.id,
+        avatarUrl: user.avatar.url,
       },
     },
     process.env.ACCESS_TOKEN_SECRET,
@@ -105,7 +137,7 @@ const register = async (req, res) => {
   );
 
   const refreshToken = jwt.sign(
-    { username: user.username, email: user.email, id: user.id },
+    { username: user.username, email: user.email, id: user.id, avatarUrl: user.avatar.url },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: '7d' },
   );
@@ -132,7 +164,7 @@ const register = async (req, res) => {
 // @access Public - because access token has expired
 const refresh = (req, res) => {
   const cookies = req.cookies;
-  // console.log('cookie', cookies);
+
   if (!cookies?.jwt) return res.status(401).json({ message: 'Unauthorized' });
 
   const refreshToken = cookies.jwt;
@@ -154,6 +186,7 @@ const refresh = (req, res) => {
           email: foundUser.email,
           roles: foundUser.roles,
           id: foundUser.id,
+          avatarUrl: foundUser.avatar.url,
         },
       },
       process.env.ACCESS_TOKEN_SECRET,

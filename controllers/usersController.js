@@ -1,6 +1,7 @@
 const User = require('../models/User');
 // const Note = require('../models/Note')
 const bcrypt = require('bcrypt');
+const cloudinary = require('cloudinary');
 
 // @desc Get all users
 // @route GET /users
@@ -21,10 +22,10 @@ const getAllUsers = async (req, res) => {
 // @route POST /users
 // @access Private
 const createNewUser = async (req, res) => {
-  const { username, email, password, roles } = req.body;
+  const { username, email, password, roles, avatar } = req.body;
 
   // Confirm data
-  if (!username || !email || !password) {
+  if (!username || !email || !password || !avatar) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -44,13 +45,36 @@ const createNewUser = async (req, res) => {
     return res.status(409).json({ message: 'Duplicate email' });
   }
 
+  myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+    folder: 'avatars',
+    width: 150,
+    crop: 'scale',
+  });
+
   // Hash password
   const hashedPwd = await bcrypt.hash(password, 10); // salt rounds
 
   const userObject =
     !Array.isArray(roles) || !roles.length
-      ? { username, email, password: hashedPwd }
-      : { username, email, password: hashedPwd, roles };
+      ? {
+          username,
+          email,
+          password: hashedPwd,
+          avatar: {
+            public_id: myCloud.public_id,
+            url: myCloud.secure_url,
+          },
+        }
+      : {
+          username,
+          email,
+          password: hashedPwd,
+          roles,
+          avatar: {
+            public_id: myCloud.public_id,
+            url: myCloud.secure_url,
+          },
+        };
 
   // Create and store new user
   const user = await User.create(userObject);
@@ -67,10 +91,10 @@ const createNewUser = async (req, res) => {
 // @route PATCH /users
 // @access Private
 const updateUser = async (req, res) => {
-  const { id, username, email, roles, password } = req.body;
+  const { id, username, email, roles, password, avatar } = req.body;
 
   // Confirm data
-  if (!id || !username || !email || !Array.isArray(roles) || !roles.length) {
+  if (!id || !username || !email || !avatar || !Array.isArray(roles) || !roles.length) {
     return res.status(400).json({ message: 'All fields except password are required' });
   }
 
@@ -98,9 +122,35 @@ const updateUser = async (req, res) => {
     return res.status(409).json({ message: 'Duplicate username or email' });
   }
 
+  // Avatar Start Here
+  let newAvatar = '';
+
+  if (typeof req.body.avatar === 'string') {
+    newAvatar = req.body.avatar;
+  }
+
+  let avatarLink = {};
+  if (newAvatar !== undefined) {
+    // Deleting Images From Cloudinary
+
+    await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+
+    const result = await cloudinary.v2.uploader.upload(newAvatar, {
+      folder: 'avatars',
+    });
+
+    avatarLink = {
+      public_id: result.public_id,
+      url: result.secure_url,
+    };
+
+    req.body.avatar = avatarLink;
+  }
+
   user.username = username;
   user.email = email;
   user.roles = roles;
+  user.avatar = req.body.avatar;
 
   if (password) {
     // Hash password
@@ -135,6 +185,9 @@ const deleteUser = async (req, res) => {
   if (!user) {
     return res.status(400).json({ message: 'User not found' });
   }
+
+  //delete images from cloudinary
+  await cloudinary.v2.uploader.destroy(user.avatar.public_id);
 
   const result = await user.deleteOne();
 

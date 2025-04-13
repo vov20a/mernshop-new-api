@@ -2,6 +2,7 @@ require('dotenv').config();
 require('express-async-errors');
 const express = require('express');
 const app = express();
+const cloudinary = require('cloudinary');
 const path = require('path');
 const { logger, logEvents } = require('./middlewares/logger');
 const errorHandler = require('./middlewares/errorHandler');
@@ -12,6 +13,13 @@ const connectDB = require('./config/dbConn');
 const mongoose = require('mongoose');
 const fileUpload = require('express-fileupload');
 const PORT = process.env.PORT || 3500;
+
+//save and load images
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 console.log(process.env.NODE_ENV);
 app.use(fileUpload({}));
